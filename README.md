@@ -1,0 +1,1 @@
+This project will be a Unity package written in C++ to provide developers with quickly generated dungeon levels for top down games. The first algorithm that will be implemented is a random walk with corridors.
