@@ -1,0 +1,187 @@
+Transitioning your Unity procedural generation work into a Native C++ Plugin is an ideal project. It builds directly on your game development knowledge while demonstrating systems programming, memory management, and C++/C# interoperability.
+Here is a step-by-step architectural plan to build, integrate, and benchmark a High-Performance Native C++ Level Generator for Unity.
+Architecture Overview
+┌─────────────────────────────────────────────────────────┐
+ │                   C++ Native Library                    │
+ │  - Custom Memory Allocator / Flat Arrays                │
+ │  - Generation Algorithm (BSP / Cellular Automata / WFC) │
+ │  - Fast Bitwise Neighbor & Connectivity Queries        │
+ └────────────────────────────┬────────────────────────────┘
+                              │ C-style ABI Export
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │                 Unity C# Bridge Layer                   │
+ │  - [DllImport] P/Invoke Wrapper                         │
+ │  - NativeArray / Unsafe Memory Pointer Mapping          │
+ └────────────────────────────┬────────────────────────────┘
+                              │
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │                 Unity Visualization                     │
+ │  - Tilemap.SetTilesBlock / Custom Mesh Generation       │
+ └─────────────────────────────────────────────────────────┘
+
+Phase 1: Define C++ Data Layouts & API
+To avoid per-frame allocations and interop overhead, pass pre-allocated memory buffers from C# into C++ rather than returning managed objects.
+1. High-Performance Grid Layout
+Represent a 2D/3D map using a flat 1D array (uint8_t* or int32_t*) rather than 2D/nested arrays (Tile**). This keeps memory contiguous and CPU cache-friendly.
+
+Index=yWidth+x
+2. Standard C-Compatible Export Interface
+Export functions with C linkage (extern "C") to prevent C++ name mangling:
+LevelGenerator.h
+C++
+#pragma once
+#include <cstdint>
+
+#if defined(_WIN32)
+    #define EXPORT_API __declspec(dllexport)
+#else
+    #define EXPORT_API __attribute__((visibility("default")))
+#endif
+
+extern "C" {
+    // Config struct passed across boundary
+    struct LevelConfig {
+        int32_t width;
+        int32_t height;
+        int32_t seed;
+        int32_t minRoomSize;
+        int32_t maxRooms;
+    };
+
+    // Generates map directly into pre-allocated buffer
+    EXPORT_API void GenerateLevel(LevelConfig config, uint8_t* outMapData);
+    
+    // Optional query function for room bounding boxes or connectivity
+    EXPORT_API int32_t GetRoomCount();
+}
+
+Phase 2: C++ Core Generation Engine
+Choose an algorithm that fits your game style (e.g., Binary Space Partitioning (BSP), Cellular Automata, or Wave Function Collapse):
+Memory Pooling: Pre-allocate room and corridor nodes in contiguous vectors/arrays to avoid runtime heap fragmentation.
+Bitmasking & Fast Lookups: Use byte bitmasks for tile types (e.g., 0x00 = Empty, 0x01 = Wall, 0x02 = Floor, 0x04 = Door).
+Multithreading (Optional Enhancement): Use std::async or OpenMP if generating multiple map layers or large noise heightmaps simultaneously.
+Phase 3: Build Pipeline (CMake)
+Set up a CMake script to output shared libraries (.dll on Windows, .so on Linux, .dylib on macOS) directly into Unity’s Assets/Plugins/ directory.
+CMakeLists.txt
+CMake
+cmake_minimum_required(VERSION 3.16)
+project(NativeLevelGen LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_library(NativeLevelGen SHARED
+    src/LevelGenerator.cpp
+    src/BSPNode.cpp
+)
+
+# Output build straight into your Unity Plugins folder
+set_target_properties(NativeLevelGen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../UnityProject/Assets/Plugins"
+)
+
+Phase 4: Unity C# Integration Layer
+Write a clean C# wrapper that handles P/Invoke bindings and memory pointers safely.
+NativeLevelBridge.cs
+C#
+using System;
+using System.Runtime.InteropServices;
+using UnityEngine;
+
+public static class NativeLevelBridge
+{
+    private const string DllName = "NativeLevelGen";
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct LevelConfig
+    {
+        public int width;
+        public int height;
+        public int seed;
+        public int minRoomSize;
+        public int maxRooms;
+    }
+
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+    public static extern void GenerateLevel(LevelConfig config, IntPtr outMapData);
+}
+
+Fast Unity Tilemap Rendering Script
+Use Tilemap.SetTilesBlock or Unity's unsafe native arrays for high performance:
+LevelGeneratorManager.cs
+C#
+using System;
+using System.Runtime.InteropServices;
+using UnityEngine;
+using UnityEngine.Tilemaps;
+
+public class LevelGeneratorManager : MonoBehaviour
+{
+    [SerializeField] private Tilemap tilemap;
+    [SerializeField] private TileBase wallTile;
+    [SerializeField] private TileBase floorTile;
+
+    public void Generate(int width, int height, int seed)
+    {
+        int totalCells = width * height;
+        byte[] mapBuffer = new byte[totalCells];
+
+        // Pin managed memory buffer to send unmanaged pointer to C++
+        GCHandle handle = GCHandle.Alloc(mapBuffer, GCHandleType.Pinned);
+        try
+        {
+            var config = new NativeLevelBridge.LevelConfig
+            {
+                width = width,
+                height = height,
+                seed = seed,
+                minRoomSize = 6,
+                maxRooms = 15
+            };
+
+            NativeLevelBridge.GenerateLevel(config, handle.AddrOfPinnedObject());
+        }
+        finally
+        {
+            handle.Free();
+        }
+
+        // Apply grid directly to Unity Tilemap
+        ApplyToTilemap(mapBuffer, width, height);
+    }
+
+    private void ApplyToTilemap(byte[] mapData, int width, int height)
+    {
+        tilemap.ClearAllTiles();
+        TileBase[] tileArray = new TileBase[mapData.Length];
+
+        for (int i = 0; i < mapData.Length; i++)
+        {
+            tileArray[i] = mapData[i] switch
+            {
+                1 => wallTile,
+                2 => floorTile,
+                _ => null
+            };
+        }
+
+        BoundsInt bounds = new BoundsInt(0, 0, 0, width, height, 1);
+        tilemap.SetTilesBlock(bounds, tileArray);
+    }
+}
+
+Phase 5: Benchmarking & Comparison
+To highlight this on a resume, capture a performance benchmark comparing Native C++ vs. Pure C#:
+Write a C# script executing the exact same generation algorithm.
+Measure time using System.Diagnostics.Stopwatch.
+Compare execution time for large grid sizes (e.g., 500500 or 10001000 tiles).
+Measure Garbage Collection pressure (0 bytes allocated in C++ vs. C# object allocations).
+Final Resume Presentation
+Once built, format this entry on your resume under Projects:
+Native C++ Procedural Level Generator | C++, Unity, C# Interop (P/Invoke), CMake, Cache Optimization
+Engineered a high-performance native C++ procedural level generation library compiled as a dynamic plugin (.dll) for Unity.
+Implemented cache-aligned contiguous memory layouts and C-style ABI bindings ([DllImport]), passing raw pinned byte pointers across the native boundary with zero GC allocations.
+Achieved a [X]x speed improvement in map generation throughput over pure C# scripts for 10001000 tile environments.
+
