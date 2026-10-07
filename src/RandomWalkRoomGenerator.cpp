@@ -12,6 +12,8 @@ namespace {
     bool isValidPosition(Vector2Int pos, RandomWalkRoomGeneratorConfig config);
 }
 
+//TODO: Update map to be an int* for cache performance
+//TODO: Replace padding with left, right, top, bottom padding for bounding box implementation
 void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, int** map, int seed) {
     //Validate input parameters
     if (config.mapWidth <= 0){
