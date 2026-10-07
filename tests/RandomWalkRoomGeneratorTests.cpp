@@ -1,0 +1,327 @@
+﻿#include "RandomWalkRoomGenerator.h"
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace {
+    class TestMap {
+    public:
+        TestMap(int width, int height)
+            : width_(width), height_(height), rows_(height), storage_(height, std::vector<int>(width)) {
+            for (int y = 0; y < height_; ++y) {
+                rows_[y] = storage_[y].data();
+            }
+        }
+
+        int** data() {
+            return rows_.data();
+        }
+
+        int at(int x, int y) const {
+            return storage_[y][x];
+        }
+
+        bool operator==(const TestMap& other) const {
+            return storage_ == other.storage_;
+        }
+
+        int width() const {
+            return width_;
+        }
+
+        int height() const {
+            return height_;
+        }
+
+    private:
+        int width_;
+        int height_;
+        std::vector<int*> rows_;
+        std::vector<std::vector<int>> storage_;
+    };
+
+    RandomWalkRoomGeneratorConfig defaultConfig() {
+        return {
+            40,
+            40,
+            200,
+            2,
+            3,
+            1,
+            3,
+            {20, 20}
+        };
+    }
+
+    void require(bool condition, const std::string& message) {
+        if (!condition) {
+            throw std::runtime_error(message);
+        }
+    }
+
+    void requireInvalid(RandomWalkRoomGeneratorConfig config, int** map, const std::string& message) {
+        RandomWalkRoomGenerator generator;
+        try {
+            generator.generate(config, map, 1);
+        } catch (const std::invalid_argument&) {
+            return;
+        }
+        throw std::runtime_error(message);
+    }
+
+    void requireInvalidMap(RandomWalkRoomGeneratorConfig config, int** map, const std::string& message) {
+        RandomWalkRoomGenerator generator;
+        try {
+            generator.generate(config, map, 1);
+        } catch (const std::invalid_argument&) {
+            return;
+        }
+        throw std::runtime_error(message);
+    }
+
+    void requireWallHeightInvariant(const TestMap& map, int minimumHeight) {
+        for (int x = 0; x < map.width(); ++x) {
+            int y = 0;
+            while (y < map.height()) {
+                if (map.at(x, y) == 0) {
+                    ++y;
+                    continue;
+                }
+
+                const int start = y;
+                while (y < map.height() && map.at(x, y) == 1) {
+                    ++y;
+                }
+                require(y - start >= minimumHeight,
+                        "A wall run is shorter than the configured minimum height.");
+            }
+        }
+    }
+
+    void testGeneratesFloorsInsidePadding() {
+        const auto config = defaultConfig();
+        TestMap map(config.mapWidth, config.mapHeight);
+        RandomWalkRoomGenerator generator;
+
+        generator.generate(config, map.data(), 1234);
+
+        int floorCount = 0;
+        for (int y = 0; y < map.height(); ++y) {
+            for (int x = 0; x < map.width(); ++x) {
+                require(map.at(x, y) == 0 || map.at(x, y) == 1, "Map contains an invalid tile value.");
+                if (map.at(x, y) == 0) {
+                    ++floorCount;
+                    require(x >= config.xPadding &&
+                            x < config.mapWidth - config.xPadding &&
+                            y >= config.yPadding &&
+                            y < config.mapHeight - config.yPadding,
+                            "Floor was carved outside the configured padding.");
+                }
+            }
+        }
+        require(floorCount > 0, "Generation did not carve any floor tiles.");
+    }
+
+    void testRectangularMaps() {
+        RandomWalkRoomGenerator generator;
+        const std::vector<std::pair<int, int>> dimensions = {
+            {80, 40},
+            {40, 80},
+            {17, 35}
+        };
+
+        for (const auto [width, height] : dimensions) {
+            auto config = defaultConfig();
+            config.mapWidth = width;
+            config.mapHeight = height;
+            config.startPosition = {width / 2, height / 2};
+            TestMap map(width, height);
+
+            generator.generate(config, map.data(), 1234);
+
+            for (int y = 0; y < height; ++y) {
+                for (int x = 0; x < width; ++x) {
+                    require(map.at(x, y) == 0 || map.at(x, y) == 1,
+                            "Rectangular map contains an invalid tile value.");
+                }
+            }
+        }
+    }
+
+    void testSeedIsDeterministic() {
+        const auto config = defaultConfig();
+        TestMap first(config.mapWidth, config.mapHeight);
+        TestMap second(config.mapWidth, config.mapHeight);
+        RandomWalkRoomGenerator generator;
+
+        generator.generate(config, first.data(), 9876);
+        generator.generate(config, second.data(), 9876);
+
+        require(first == second, "The same seed did not produce the same map.");
+    }
+
+    void testBrushSizes() {
+        RandomWalkRoomGenerator generator;
+        for (const int brushSize : {1, 2, 3, 4}) {
+            auto config = defaultConfig();
+            config.brushSize = brushSize;
+            TestMap map(config.mapWidth, config.mapHeight);
+
+            generator.generate(config, map.data(), 1234);
+
+            for (int y = 0; y < map.height(); ++y) {
+                for (int x = 0; x < map.width(); ++x) {
+                    require(map.at(x, y) == 0 || map.at(x, y) == 1,
+                            "Brush-size test produced an invalid tile value.");
+                }
+            }
+        }
+    }
+
+    void testWallHeightMinimumAcrossSeeds() {
+        const auto config = defaultConfig();
+        RandomWalkRoomGenerator generator;
+
+        for (int seed = 0; seed < 100; ++seed) {
+            TestMap map(config.mapWidth, config.mapHeight);
+            generator.generate(config, map.data(), seed);
+            requireWallHeightInvariant(map, config.wallHeightMinimum);
+        }
+    }
+
+    void testZeroStepsCarvesOnlyStartingBrush() {
+        auto config = defaultConfig();
+        config.numberOfSteps = 0;
+        config.brushSize = 1;
+        TestMap map(config.mapWidth, config.mapHeight);
+        RandomWalkRoomGenerator generator;
+
+        generator.generate(config, map.data(), 1234);
+
+        int floorCount = 0;
+        for (int y = 0; y < map.height(); ++y) {
+            for (int x = 0; x < map.width(); ++x) {
+                floorCount += map.at(x, y) == 0 ? 1 : 0;
+            }
+        }
+        require(floorCount == 1, "Zero steps did not carve exactly the starting tile.");
+        require(map.at(config.startPosition.x, config.startPosition.y) == 0,
+                "Zero steps did not carve the starting tile.");
+    }
+
+    void testBoundaryStartingPositions() {
+        auto config = defaultConfig();
+        config.brushSize = 1;
+        RandomWalkRoomGenerator generator;
+
+        const std::vector<Vector2Int> starts = {
+            {config.xPadding, config.yPadding},
+            {config.mapWidth - config.xPadding - 1, config.yPadding},
+            {config.xPadding, config.mapHeight - config.yPadding - 1},
+            {config.mapWidth - config.xPadding - 1, config.mapHeight - config.yPadding - 1}
+        };
+
+        for (const auto start : starts) {
+            config.startPosition = start;
+            TestMap map(config.mapWidth, config.mapHeight);
+            generator.generate(config, map.data(), 1234);
+            require(map.at(start.x, start.y) == 0,
+                    "A valid boundary start position was not carved.");
+        }
+    }
+
+    void testInvalidConfiguration() {
+        const auto config = defaultConfig();
+        TestMap map(config.mapWidth, config.mapHeight);
+
+        auto invalid = config;
+        invalid.mapWidth = 0;
+        requireInvalid(invalid, map.data(), "Zero map width was accepted.");
+
+        invalid = config;
+        invalid.brushSize = 0;
+        requireInvalid(invalid, map.data(), "Zero brush size was accepted.");
+
+        invalid = config;
+        invalid.yPadding = 2;
+        requireInvalid(invalid, map.data(), "Insufficient vertical padding was accepted.");
+
+        invalid = config;
+        invalid.startPosition = {0, 0};
+        requireInvalid(invalid, map.data(), "An invalid start position was accepted.");
+
+        invalid = config;
+        invalid.xPadding = -1;
+        requireInvalid(invalid, map.data(), "Negative horizontal padding was accepted.");
+
+        invalid = config;
+        invalid.yPadding = -1;
+        requireInvalid(invalid, map.data(), "Negative vertical padding was accepted.");
+
+        invalid = config;
+        invalid.numberOfSteps = -1;
+        requireInvalid(invalid, map.data(), "Negative step count was accepted.");
+
+        invalid = config;
+        invalid.mapWidth = 4;
+        invalid.xPadding = 1;
+        invalid.startPosition = {2, 20};
+        requireInvalid(invalid, map.data(), "An effective width smaller than the brush was accepted.");
+
+        invalid = config;
+        invalid.mapHeight = 7;
+        invalid.yPadding = 3;
+        invalid.startPosition = {20, 3};
+        requireInvalid(invalid, map.data(), "An effective height smaller than the brush was accepted.");
+
+        requireInvalidMap(config, nullptr, "A null map was accepted.");
+
+        std::vector<int*> rows(config.mapHeight, nullptr);
+        requireInvalidMap(config, rows.data(), "A map with a null row was accepted.");
+    }
+
+    void testBrushFootprint() {
+        auto config = defaultConfig();
+        config.numberOfSteps = 0;
+        config.brushSize = 3;
+        config.startPosition = {20, 20};
+        TestMap map(config.mapWidth, config.mapHeight);
+        RandomWalkRoomGenerator generator;
+
+        generator.generate(config, map.data(), 1234);
+
+        int floorCount = 0;
+        for (int y = 0; y < map.height(); ++y) {
+            for (int x = 0; x < map.width(); ++x) {
+                floorCount += map.at(x, y) == 0 ? 1 : 0;
+            }
+        }
+        require(floorCount == 9, "A centered 3x3 brush did not carve the expected footprint.");
+    }
+
+    void runAllTests() {
+        testGeneratesFloorsInsidePadding();
+        testRectangularMaps();
+        testSeedIsDeterministic();
+        testBrushSizes();
+        testWallHeightMinimumAcrossSeeds();
+        testZeroStepsCarvesOnlyStartingBrush();
+        testBoundaryStartingPositions();
+        testInvalidConfiguration();
+        testBrushFootprint();
+    }
+}
+
+int main() {
+    try {
+        runAllTests();
+        std::cout << "All RandomWalkRoomGenerator tests passed.\n";
+        return EXIT_SUCCESS;
+    } catch (const std::exception& error) {
+        std::cerr << "RandomWalkRoomGenerator test failed: " << error.what() << '\n';
+        return EXIT_FAILURE;
+    }
+}

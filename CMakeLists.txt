@@ -13,10 +13,20 @@ FetchContent_MakeAvailable(raylib)
 
 add_executable(QuickDungeonGeneration
     tests/UserInputSeedTest.cpp
-    src/RandomWalkGenerator.cpp
+    src/RandomWalkRoomGenerator.cpp
+)
+
+add_executable(RandomWalkRoomGeneratorTests
+    tests/RandomWalkRoomGeneratorTests.cpp
+    src/RandomWalkRoomGenerator.cpp
 )
 
 target_include_directories(QuickDungeonGeneration
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+target_include_directories(RandomWalkRoomGeneratorTests
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
@@ -30,3 +40,11 @@ target_compile_features(QuickDungeonGeneration
     PRIVATE
         cxx_std_20
 )
+
+target_compile_features(RandomWalkRoomGeneratorTests
+    PRIVATE
+        cxx_std_20
+)
+
+enable_testing()
+add_test(NAME RandomWalkRoomGeneratorTests COMMAND RandomWalkRoomGeneratorTests)
