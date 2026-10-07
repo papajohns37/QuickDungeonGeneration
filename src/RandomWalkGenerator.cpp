@@ -1,13 +1,13 @@
 #include <RandomWalkGenerator.h>
 #include <random>
 
-void replaceWithFloor(Vector2 position, int brushSize, int** map);
+void replaceWithFloor(Vector2 position, int brushSize, int wallHeightMinimum, int mapHeight, int mapWidth, int** map);
+void deleteTile(int x, int y1, int wallHeightMinimum, int mapHeight, int mapWidth, int** map);
 Vector2 positionPlusDirection(Vector2 startPosition, int direction);
 bool isValidPosition(Vector2 pos, int mapWidth, int mapHeight);
 
-//TODO: Add wall height requirement?
 //TODO: Add padding
-void RandomWalkGenerator::generate(int mapWidth, int mapHeight, int numberOfSteps, int brushSize, Vector2 startPosition, int** map, int seed) {
+void RandomWalkGenerator::generate(int mapWidth, int mapHeight, int numberOfSteps, int brushSize, int wallHeightMinimum, Vector2 startPosition, int** map, int seed) {
     // Implementation for generating the random walk
 
     // Populate the wap with walls
@@ -28,15 +28,72 @@ void RandomWalkGenerator::generate(int mapWidth, int mapHeight, int numberOfStep
 
         startPosition = positionPlusDirection(startPosition, direction);
 
-        replaceWithFloor(startPosition, brushSize, map);
+        replaceWithFloor(startPosition, brushSize, wallHeightMinimum, mapHeight, mapWidth, map);
     }
 }
 
-void replaceWithFloor(Vector2 position, int brushSize, int** map){
+void replaceWithFloor(Vector2 position, int brushSize, int wallHeightMinimum, int mapHeight, int mapWidth, int** map){
     for (int x = static_cast<int>(position.x) - brushSize / 2; x < static_cast<int>(position.x) - brushSize / 2 + brushSize; x++){
         for (int y = static_cast<int>(position.y) - brushSize / 2; y < static_cast<int>(position.y) - brushSize / 2 + brushSize; y++){
-            map[y][x] = 0;
+            deleteTile(x, y, wallHeightMinimum, mapHeight, mapWidth, map);
         }
+    }
+}
+
+void deleteTile(int x, int y1, int wallHeightMinimum, int mapHeight, int mapWidth, int** map){
+    if (!isValidPosition(Vector2(x, y1), mapWidth, mapHeight)){
+        return;
+    }
+    map[y1][x] = 0;
+
+    //Check if above violates wall height minimum
+    bool deleteTilesAbove = false;
+    for (int y = y1 + 1; y < y1 + wallHeightMinimum; y++){
+        if (!isValidPosition(Vector2(x, y + 1), mapWidth, mapHeight)){
+            break;
+        }
+        if (map[y][x] == 1 && map[y + 1][x] == 0){
+            deleteTilesAbove = true;
+            break;
+        }
+        if (map[y][x] == 0){
+            break;
+        }
+    }
+
+    //Check if below violates wall height minimum
+    bool deleteTilesBelow = false;
+    for (int y = y1 - 1; y > y1 - wallHeightMinimum; y--){
+        if (!isValidPosition(Vector2(x, y - 1), mapWidth, mapHeight)){
+            break;
+        }
+        if (map[y][x] == 1 && map[y - 1][x] == 0){
+            deleteTilesBelow = true;
+            break;
+        }
+        if (map[y][x] == 0){
+            break;
+        }
+    }
+
+    //Delete tiles as necessary
+    for (int y = y1 + 1; y < y1 + wallHeightMinimum && deleteTilesAbove; y++){
+        if (!isValidPosition(Vector2(x, y), mapWidth, mapHeight)){
+            break;
+        }
+        if (map[y][x] == 0){
+            break;
+        }
+        map[y][x] = 0;
+    }
+    for (int y = y1 - 1; y > y1 - wallHeightMinimum && deleteTilesBelow; y--){
+        if (!isValidPosition(Vector2(x, y), mapWidth, mapHeight)){
+            break;
+        }
+        if (map[y][x] == 0){
+            break;
+        }
+        map[y][x] = 0;
     }
 }
 

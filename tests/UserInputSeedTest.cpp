@@ -9,7 +9,8 @@
 
 constexpr int MAP_WIDTH = 64;
 constexpr int MAP_HEIGHT = 64;
-constexpr int BRUSH_SIZE = 2;
+constexpr int BRUSH_SIZE = 1;
+constexpr int WALL_HEIGHT_MINIMUM = 3;
 
 int main(){
     // Set console output and input encoding to UTF-8
@@ -24,7 +25,7 @@ int main(){
     for (int i = 0; i < MAP_HEIGHT; i++){
         map[i] = new int[MAP_WIDTH];
     }
-    gen.generate(MAP_WIDTH, MAP_HEIGHT, MAP_WIDTH * MAP_HEIGHT / 4, BRUSH_SIZE, Vector2(MAP_WIDTH / 2, MAP_HEIGHT / 2), map, seed);
+    gen.generate(MAP_WIDTH, MAP_HEIGHT, MAP_WIDTH * MAP_HEIGHT / 4, BRUSH_SIZE, WALL_HEIGHT_MINIMUM, Vector2(MAP_WIDTH / 2, MAP_HEIGHT / 2), map, seed);
     for (int i = 0; i < MAP_HEIGHT; i++){
         for (int j = 0; j < MAP_WIDTH; j++){
             if (map[i][j] == 1){
