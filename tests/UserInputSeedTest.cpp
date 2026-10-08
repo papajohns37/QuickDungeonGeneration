@@ -34,14 +34,11 @@ int main(){
     int seed;
     std::cout << "Enter a seed: ";
     std::cin >> seed;
-    int** map = new int*[MAP_HEIGHT];
-    for (int i = 0; i < MAP_HEIGHT; i++){
-        map[i] = new int[MAP_WIDTH];
-    }
+    TileMap map(MAP_WIDTH, MAP_HEIGHT);
     gen.generate(config, map, seed);
     for (int i = 0; i < MAP_HEIGHT; i++){
         for (int j = 0; j < MAP_WIDTH; j++){
-            if (map[i][j] == 1){
+            if (map(j, i) == 1){
                 std::cout << "██";
             } else {
                 std::cout << "  ";
@@ -49,8 +46,4 @@ int main(){
         }
         std::cout << std::endl;
     }
-    for (int i = 0; i < MAP_HEIGHT; i++){
-        delete[] map[i];
-    }
-    delete[] map;
 }

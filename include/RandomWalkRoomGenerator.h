@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RandomWalkRoomGeneratorConfig.h"
+#include "TileMap.h"
 #include "Vector2Int.h"
 
 class RandomWalkRoomGenerator {
@@ -21,5 +22,5 @@ class RandomWalkRoomGenerator {
         /// The map should be pre-allocated with the specified width and height.
         /// The function will modify this map in place to create the random walk.
         /// @param seed The seed for the random number generator to ensure reproducibility.
-        void generate(RandomWalkRoomGeneratorConfig config, int** map, int seed);
+        void generate(RandomWalkRoomGeneratorConfig config, TileMap& map, int seed);
 };

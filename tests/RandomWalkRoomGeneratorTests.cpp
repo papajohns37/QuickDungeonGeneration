@@ -10,37 +10,31 @@ namespace {
     class TestMap {
     public:
         TestMap(int width, int height)
-            : width_(width), height_(height), rows_(height), storage_(height, std::vector<int>(width)) {
-            for (int y = 0; y < height_; ++y) {
-                rows_[y] = storage_[y].data();
-            }
+            : map_(width, height) {
         }
 
-        int** data() {
-            return rows_.data();
+        TileMap& data() {
+            return map_;
         }
 
         int at(int x, int y) const {
-            return storage_[y][x];
+            return map_(x, y);
         }
 
         bool operator==(const TestMap& other) const {
-            return storage_ == other.storage_;
+            return map_.data == other.map_.data;
         }
 
         int width() const {
-            return width_;
+            return map_.width;
         }
 
         int height() const {
-            return height_;
+            return map_.height;
         }
 
     private:
-        int width_;
-        int height_;
-        std::vector<int*> rows_;
-        std::vector<std::vector<int>> storage_;
+        TileMap map_;
     };
 
     RandomWalkRoomGeneratorConfig defaultConfig() {
@@ -62,17 +56,7 @@ namespace {
         }
     }
 
-    void requireInvalid(RandomWalkRoomGeneratorConfig config, int** map, const std::string& message) {
-        RandomWalkRoomGenerator generator;
-        try {
-            generator.generate(config, map, 1);
-        } catch (const std::invalid_argument&) {
-            return;
-        }
-        throw std::runtime_error(message);
-    }
-
-    void requireInvalidMap(RandomWalkRoomGeneratorConfig config, int** map, const std::string& message) {
+    void requireInvalid(RandomWalkRoomGeneratorConfig config, TileMap& map, const std::string& message) {
         RandomWalkRoomGenerator generator;
         try {
             generator.generate(config, map, 1);
@@ -277,10 +261,9 @@ namespace {
         invalid.startPosition = {20, 3};
         requireInvalid(invalid, map.data(), "An effective height smaller than the brush was accepted.");
 
-        requireInvalidMap(config, nullptr, "A null map was accepted.");
-
-        std::vector<int*> rows(config.mapHeight, nullptr);
-        requireInvalidMap(config, rows.data(), "A map with a null row was accepted.");
+        invalid = config;
+        TileMap mismatchedMap(config.mapWidth - 1, config.mapHeight);
+        requireInvalid(invalid, mismatchedMap, "A map with mismatched dimensions was accepted.");
     }
 
     void testBrushFootprint() {

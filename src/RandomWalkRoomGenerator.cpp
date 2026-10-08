@@ -5,16 +5,15 @@
 #include <string>
 
 namespace {
-    void applyBrush(Vector2Int position, RandomWalkRoomGeneratorConfig config, int** map);
-    void deleteTile(Vector2Int position, RandomWalkRoomGeneratorConfig config, int** map);
+    void applyBrush(Vector2Int position, RandomWalkRoomGeneratorConfig config, TileMap& map);
+    void deleteTile(Vector2Int position, RandomWalkRoomGeneratorConfig config, TileMap& map);
     Vector2Int positionPlusDirection(Vector2Int startPosition, int direction);
     bool brushCanBeApplied(Vector2Int pos, RandomWalkRoomGeneratorConfig config);
     bool isValidPosition(Vector2Int pos, RandomWalkRoomGeneratorConfig config);
 }
 
-//TODO: Update map to be an int* for cache performance
 //TODO: Replace padding with left, right, top, bottom padding for bounding box implementation
-void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, int** map, int seed) {
+void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, TileMap& map, int seed) {
     //Validate input parameters
     if (config.mapWidth <= 0){
         throw std::invalid_argument("Map width must be positive.");
@@ -37,13 +36,8 @@ void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, int
     if (config.numberOfSteps < 0){
         throw std::invalid_argument("Number of steps cannot be negative.");
     }
-    if (!map) {
-        throw std::invalid_argument("Map is a null pointer.");
-    }
-    for (int y = 0; y < config.mapHeight; y++) {
-        if (!map[y]) {
-            throw std::invalid_argument("Row" + std::to_string(y) + " in map was not allocated.");
-        }
+    if (config.mapWidth != map.width || config.mapHeight != map.height){
+        throw std::invalid_argument("Map dimensions do not match configuration.");
     }
     if (config.xPadding > std::numeric_limits<int>::max() / 2 || config.yPadding > std::numeric_limits<int>::max() / 2){
         throw std::invalid_argument("X or Y padding are too large.");
@@ -66,7 +60,7 @@ void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, int
     // Populate the map with walls
     for (int y = 0; y < config.mapHeight; y++) {
         for (int x = 0; x < config.mapWidth; x++) {
-            map[y][x] = 1;
+            map(x, y) = 1;
         }
     }
 
@@ -89,7 +83,7 @@ void RandomWalkRoomGenerator::generate(RandomWalkRoomGeneratorConfig config, int
 
 
 namespace {
-    void applyBrush(Vector2Int position, RandomWalkRoomGeneratorConfig config, int** map){
+    void applyBrush(Vector2Int position, RandomWalkRoomGeneratorConfig config, TileMap& map){
         if (!brushCanBeApplied(position, config)){
             return;
         }
@@ -101,11 +95,11 @@ namespace {
     }
 
 
-    void deleteTile(Vector2Int position, RandomWalkRoomGeneratorConfig config, int** map){
+    void deleteTile(Vector2Int position, RandomWalkRoomGeneratorConfig config, TileMap& map){
         if (!brushCanBeApplied(Vector2Int(position.x, position.y), config)){
             return;
         }
-        map[position.y][position.x] = 0;
+        map(position.x, position.y) = 0;
 
         int x = position.x;
         int y1 = position.y;
@@ -116,11 +110,11 @@ namespace {
             if (!isValidPosition(Vector2Int(x, y + 1), config)){
                 break;
             }
-            if (map[y][x] == 1 && map[y + 1][x] == 0){
+            if (map(x, y) == 1 && map(x, y + 1) == 0){
                 deleteTilesAbove = true;
                 break;
             }
-            if (map[y][x] == 0){
+            if (map(x, y) == 0){
                 break;
             }
         }
@@ -131,11 +125,11 @@ namespace {
             if (!isValidPosition(Vector2Int(x, y - 1), config)){
                 break;
             }
-            if (map[y][x] == 1 && map[y - 1][x] == 0){
+            if (map(x, y) == 1 && map(x, y - 1) == 0){
                 deleteTilesBelow = true;
                 break;
             }
-            if (map[y][x] == 0){
+            if (map(x, y) == 0){
                 break;
             }
         }
@@ -145,19 +139,19 @@ namespace {
             if (!isValidPosition(Vector2Int(x, y), config)){
                 break;
             }
-            if (map[y][x] == 0){
+            if (map(x, y) == 0){
                 break;
             }
-            map[y][x] = 0;
+            map(x, y) = 0;
         }
         for (int y = y1 - 1; y > y1 - config.wallHeightMinimum && deleteTilesBelow; y--){
             if (!isValidPosition(Vector2Int(x, y), config)){
                 break;
             }
-            if (map[y][x] == 0){
+            if (map(x, y) == 0){
                 break;
             }
-            map[y][x] = 0;
+            map(x, y) = 0;
         }
     }
 
@@ -173,8 +167,8 @@ namespace {
     }
 
     bool brushCanBeApplied(Vector2Int pos, RandomWalkRoomGeneratorConfig config){
-        for (int x = static_cast<int>(pos.x) - config.brushSize / 2; x < static_cast<int>(pos.x) - config.brushSize / 2 + config.brushSize; x++){
-            for (int y = static_cast<int>(pos.y) - config.brushSize / 2; y < static_cast<int>(pos.y) - config.brushSize / 2 + config.brushSize; y++){
+        for (int x = pos.x - config.brushSize / 2; x < pos.x - config.brushSize / 2 + config.brushSize; x++){
+            for (int y = pos.y - config.brushSize / 2; y < pos.y - config.brushSize / 2 + config.brushSize; y++){
                 if (!isValidPosition(Vector2Int(x, y), config)){
                     return false;
                 }
