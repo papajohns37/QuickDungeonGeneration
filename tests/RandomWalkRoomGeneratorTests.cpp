@@ -44,7 +44,10 @@ namespace {
             200,
             2,
             3,
-            1,
+            3,
+            3,
+            3,
+            3,
             3,
             {20, 20}
         };
@@ -98,10 +101,10 @@ namespace {
                 require(map.at(x, y) == 0 || map.at(x, y) == 1, "Map contains an invalid tile value.");
                 if (map.at(x, y) == 0) {
                     ++floorCount;
-                    require(x >= config.xPadding &&
-                            x < config.mapWidth - config.xPadding &&
-                            y >= config.yPadding &&
-                            y < config.mapHeight - config.yPadding,
+                    require(x >= config.leftPadding &&
+                            x < config.mapWidth - config.rightPadding &&
+                            y >= config.topPadding &&
+                            y < config.mapHeight - config.bottomPadding,
                             "Floor was carved outside the configured padding.");
                 }
             }
@@ -202,10 +205,10 @@ namespace {
         RandomWalkRoomGenerator generator;
 
         const std::vector<Vector2Int> starts = {
-            {config.xPadding, config.yPadding},
-            {config.mapWidth - config.xPadding - 1, config.yPadding},
-            {config.xPadding, config.mapHeight - config.yPadding - 1},
-            {config.mapWidth - config.xPadding - 1, config.mapHeight - config.yPadding - 1}
+            {config.leftPadding, config.topPadding},
+            {config.mapWidth - config.rightPadding - 1, config.topPadding},
+            {config.leftPadding, config.mapHeight - config.bottomPadding - 1},
+            {config.mapWidth - config.rightPadding - 1, config.mapHeight - config.bottomPadding - 1}
         };
 
         for (const auto start : starts) {
@@ -230,7 +233,11 @@ namespace {
         requireInvalid(invalid, map.data(), "Zero brush size was accepted.");
 
         invalid = config;
-        invalid.yPadding = 2;
+        invalid.wallWidthMinimum = 0;
+        requireInvalid(invalid, map.data(), "Zero wall width minimum was accepted.");
+
+        invalid = config;
+        invalid.topPadding = 2;
         requireInvalid(invalid, map.data(), "Insufficient vertical padding was accepted.");
 
         invalid = config;
@@ -238,11 +245,11 @@ namespace {
         requireInvalid(invalid, map.data(), "An invalid start position was accepted.");
 
         invalid = config;
-        invalid.xPadding = -1;
+        invalid.leftPadding = -1;
         requireInvalid(invalid, map.data(), "Negative horizontal padding was accepted.");
 
         invalid = config;
-        invalid.yPadding = -1;
+        invalid.bottomPadding = -1;
         requireInvalid(invalid, map.data(), "Negative vertical padding was accepted.");
 
         invalid = config;
@@ -251,13 +258,15 @@ namespace {
 
         invalid = config;
         invalid.mapWidth = 4;
-        invalid.xPadding = 1;
+        invalid.leftPadding = 1;
+        invalid.rightPadding = 1;
         invalid.startPosition = {2, 20};
         requireInvalid(invalid, map.data(), "An effective width smaller than the brush was accepted.");
 
         invalid = config;
         invalid.mapHeight = 7;
-        invalid.yPadding = 3;
+        invalid.topPadding = 3;
+        invalid.bottomPadding = 3;
         invalid.startPosition = {20, 3};
         requireInvalid(invalid, map.data(), "An effective height smaller than the brush was accepted.");
 
@@ -285,6 +294,32 @@ namespace {
         require(floorCount == 9, "A centered 3x3 brush did not carve the expected footprint.");
     }
 
+    void testEvenBrushFootprintAtPaddingBoundary() {
+        auto config = defaultConfig();
+        config.numberOfSteps = 0;
+        config.brushSize = 2;
+        config.startPosition = {
+            config.leftPadding + config.brushSize / 2,
+            config.topPadding + config.brushSize / 2
+        };
+        TestMap map(config.mapWidth, config.mapHeight);
+        RandomWalkRoomGenerator generator;
+
+        generator.generate(config, map.data(), 1234);
+
+        for (int y = 0; y < map.height(); ++y) {
+            for (int x = 0; x < map.width(); ++x) {
+                const bool expectedFloor =
+                    x >= config.leftPadding &&
+                    x < config.leftPadding + config.brushSize &&
+                    y >= config.topPadding &&
+                    y < config.topPadding + config.brushSize;
+                require((map.at(x, y) == 0) == expectedFloor,
+                        "A 2x2 brush did not carve its complete boundary footprint.");
+            }
+        }
+    }
+
     void runAllTests() {
         testGeneratesFloorsInsidePadding();
         testRectangularMaps();
@@ -295,6 +330,7 @@ namespace {
         testBoundaryStartingPositions();
         testInvalidConfiguration();
         testBrushFootprint();
+        testEvenBrushFootprintAtPaddingBoundary();
     }
 }
 

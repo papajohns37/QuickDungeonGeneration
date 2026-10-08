@@ -22,11 +22,6 @@ target_include_directories(RandomWalkRoomGeneratorTests
         ${PROJECT_SOURCE_DIR}/include
 )
 
-target_link_libraries(QuickDungeonGeneration
-    PRIVATE
-        raylib
-)
-
 target_compile_features(QuickDungeonGeneration
     PRIVATE
         cxx_std_20

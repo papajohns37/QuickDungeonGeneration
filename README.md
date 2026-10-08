@@ -1,1 +1,1 @@
-This project will be a Unity package written in C++ to provide developers with quickly generated dungeon levels for top down games. The first algorithm that will be implemented is a random walk with corridors.
+This project will be a Unity package written in C++ to provide developers with quickly generated dungeon levels for top down games. Rooms will be generated with random walk. Rooms will be placed on the map randomly with Poisson Disk Sampling (which can also be used later to spawn enemies/items/points of interest).

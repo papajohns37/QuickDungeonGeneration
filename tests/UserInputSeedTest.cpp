@@ -2,18 +2,17 @@
 #include "RandomWalkRoomGeneratorConfig.h"
 #include "Vector2Int.h"
 #include <iostream>
-#define CloseWindow CloseWindow_Win32
-#define ShowCursor ShowCursor_Win32
 #include <windows.h>
-#undef ShowCursor
-#undef CloseWindow
 
 constexpr int MAP_WIDTH = 64;
 constexpr int MAP_HEIGHT = 64;
 constexpr int BRUSH_SIZE = 2;
 constexpr int WALL_HEIGHT_MINIMUM = 3;
-constexpr int X_PADDING = 1;
-constexpr int Y_PADDING = 3;
+constexpr int WALL_WIDTH_MINIMUM = 3;
+constexpr int TOP_PADDING = 3;
+constexpr int BOTTOM_PADDING = 3;
+constexpr int LEFT_PADDING = 3;
+constexpr int RIGHT_PADDING = 3;
 
 int main(){
     // Set console output and input encoding to UTF-8
@@ -27,8 +26,11 @@ int main(){
         MAP_WIDTH * MAP_HEIGHT / 4,
         BRUSH_SIZE,
         WALL_HEIGHT_MINIMUM,
-        X_PADDING,
-        Y_PADDING,
+        WALL_WIDTH_MINIMUM,
+        TOP_PADDING,
+        BOTTOM_PADDING,
+        LEFT_PADDING,
+        RIGHT_PADDING,
         Vector2Int{MAP_WIDTH / 2, MAP_HEIGHT / 2}
     };
     int seed;

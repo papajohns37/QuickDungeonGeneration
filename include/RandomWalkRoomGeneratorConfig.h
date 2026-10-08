@@ -8,7 +8,10 @@ struct RandomWalkRoomGeneratorConfig {
     int numberOfSteps;
     int brushSize;
     int wallHeightMinimum;
-    int xPadding;
-    int yPadding;
+    int wallWidthMinimum;
+    int topPadding;
+    int bottomPadding;
+    int leftPadding;
+    int rightPadding;
     Vector2Int startPosition;
 };
