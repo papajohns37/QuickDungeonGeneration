@@ -1,4 +1,4 @@
-﻿#include "RandomWalkRoomGenerator.h"
+#include "RandomWalkRoomGenerator.h"
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -10,7 +10,7 @@ namespace {
     class TestMap {
     public:
         TestMap(int width, int height)
-            : map_(width, height) {
+            : map_(width, height, 1) {
         }
 
         TileMap& data() {
@@ -49,6 +49,7 @@ namespace {
             3,
             3,
             3,
+            0,
             {20, 20}
         };
     }
@@ -177,6 +178,33 @@ namespace {
             generator.generate(config, map.data(), seed);
             requireWallHeightInvariant(map, config.wallHeightMinimum);
         }
+    }
+
+    void testWallMinimumsRecognizeCustomFloorValues() {
+            auto config = defaultConfig();
+            config.floorValue = 7;
+            config.numberOfSteps = 0;
+            config.wallHeightMinimum = 3;
+            config.wallWidthMinimum = 3;
+            TestMap map(config.mapWidth, config.mapHeight);
+            RandomWalkRoomGenerator generator;
+
+            generator.generate(config, map.data(), 1234);
+
+            for (int x = config.leftPadding; x < config.mapWidth - config.rightPadding; ++x) {
+                int run = 0;
+                for (int y = config.topPadding; y < config.mapHeight - config.bottomPadding; ++y) {
+                    if (map.at(x, y) == config.floorValue) {
+                        require(run == 0 || run >= config.wallHeightMinimum,
+                                "Custom floor values were not recognized during wall-height enforcement.");
+                        run = 0;
+                    } else {
+                        ++run;
+                }
+            }
+                require(run == 0 || run >= config.wallHeightMinimum,
+                        "Custom floor values were not recognized during wall-height enforcement.");
+            }
     }
 
     void testZeroStepsCarvesOnlyStartingBrush() {
@@ -326,6 +354,7 @@ namespace {
         testSeedIsDeterministic();
         testBrushSizes();
         testWallHeightMinimumAcrossSeeds();
+        testWallMinimumsRecognizeCustomFloorValues();
         testZeroStepsCarvesOnlyStartingBrush();
         testBoundaryStartingPositions();
         testInvalidConfiguration();

@@ -19,7 +19,7 @@ class RandomWalkRoomGenerator {
         /// edges of the map.
         /// @param startPosition The starting position of the random walk.
         /// @param map The 2D array representing the map, where 1 represents a wall and 0 represents a floor.
-        /// The map should be pre-allocated with the specified width and height.
+        /// The map should be pre-allocated with the specified width and height and initialized with walls.
         /// The function will modify this map in place to create the random walk.
         /// @param seed The seed for the random number generator to ensure reproducibility.
         void generate(const RandomWalkRoomGeneratorConfig& config, TileMap& map, int seed);

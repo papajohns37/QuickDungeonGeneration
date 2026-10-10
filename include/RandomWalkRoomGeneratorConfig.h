@@ -13,5 +13,6 @@ struct RandomWalkRoomGeneratorConfig {
     int bottomPadding;
     int leftPadding;
     int rightPadding;
+    int floorValue;
     Vector2Int startPosition;
 };

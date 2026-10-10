@@ -99,18 +99,14 @@ namespace{
             for (int x = v1x.x; x < v2x.x; x++)
             {
                 for (int w = -(width / 2); w < (width + 1) / 2; w++)
-                {
-                    result.push_back(Vector2Int{x + w, v1x.y});
-                }
+                    result.push_back(Vector2Int{x, v1x.y + w});
             }
             Vector2Int v1y = points[i].y < points[i + 1].y ? points[i] : points[i + 1];
             Vector2Int v2y = points[i].y >= points[i + 1].y ? points[i] : points[i + 1];
             for (int y = v1y.y; y < v2y.y; y++)
             {
                 for (int w = -(width / 2); w < (width + 1) / 2; w++)
-                {
-                    result.push_back(Vector2Int{v1y.x, y + w});
-                }
+                    result.push_back(Vector2Int{v1y.x + w, y});
             }
 
             if (i + 1 < points.size() - 1) {
@@ -122,6 +118,14 @@ namespace{
                 }
             }
         }
+
+        const Vector2Int end = points.back();
+        for (int dx = -(width / 2); dx < (width + 1) / 2; ++dx) {
+            for (int dy = -(width / 2); dy < (width + 1) / 2; ++dy) {
+                result.push_back(Vector2Int{end.x + dx, end.y + dy});
+            }
+        }
+        result.push_back(end);
 
         return result;
     }

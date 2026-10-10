@@ -31,8 +31,8 @@ namespace {
         require(!path.empty(), "A valid route should not be empty.");
         require(path.front().x == 1 && path.front().y == 1,
                 "The route should begin at the starting tile.");
-        require(path.back().x == 5 && path.back().y == 3,
-                "The path should advance along the preferred orthogonal route.");
+        require(path.back().x == 5 && path.back().y == 4,
+                "The path should end at the requested destination.");
         require(containsPoint(path, {5, 1}) || containsPoint(path, {1, 3}),
                 "The route should follow the selected orthogonal branch to the destination.");
     }
@@ -49,6 +49,20 @@ namespace {
                 "A thick route should include offset tiles along the corridor width.");
         require(containsPoint(path, {2, 3}) || containsPoint(path, {1, 4}),
                 "The route should include the filled corner cells at the elbow, not just a single-line segment.");
+    }
+
+    void testFindPathUsesWidthPerpendicularToEachSegment() {
+        TileMap map(12, 12, 0);
+        OrthogonalRoutingPathfinder pathfinder;
+
+        const auto path = pathfinder.FindPath(map, {2, 2}, {8, 8}, 3, {});
+
+        require(containsPoint(path, {4, 1}) && containsPoint(path, {4, 2}) &&
+                    containsPoint(path, {4, 3}),
+                "Horizontal corridor width should extend perpendicular to travel.");
+        require(containsPoint(path, {7, 4}) && containsPoint(path, {8, 4}) &&
+                    containsPoint(path, {9, 4}),
+                "Vertical corridor width should extend perpendicular to travel.");
     }
 
     void testFindPathRejectsOutOfBoundsCoordinates() {
@@ -84,8 +98,8 @@ namespace {
                 "The alternative path should still begin at the start tile.");
         require(!containsPoint(path, {2, 1}) && !containsPoint(path, {3, 1}) && !containsPoint(path, {4, 1}),
                 "The path should not travel through any blocked tiles.");
-        require(path.back().x == 4 && path.back().y == 3,
-                "The path should follow the valid orthogonal branch toward the destination.");
+        require(path.back().x == 5 && path.back().y == 3,
+                "The path should end at the destination after following the valid orthogonal branch.");
     }
 }
 
@@ -93,6 +107,7 @@ int main() {
     try {
         testFindPathReturnsStraightRouteWhenNotBlocked();
         testFindPathIncludesCornerTilesForThickerRoutes();
+        testFindPathUsesWidthPerpendicularToEachSegment();
         testFindPathRejectsOutOfBoundsCoordinates();
         testFindPathAvoidsBlockedTilesByChoosingAnAlternativeRoute();
     } catch (const std::exception& error) {

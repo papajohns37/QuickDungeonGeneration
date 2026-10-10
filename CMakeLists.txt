@@ -4,16 +4,19 @@ project(QuickDungeonGeneration LANGUAGES CXX)
 
 add_executable(QuickDungeonGeneration
     tests/UserInputSeedTest.cpp
+    src/DungeonGenerator.cpp
     src/RandomWalkRoomGenerator.cpp
     src/PoissonDiskSampler.cpp
     src/MSTSolver.cpp
     src/DisjointSet.cpp
     src/OrthogonalRoutingPathfinder.cpp
+    src/WallThicknessEnforcer.cpp
 )
 
 add_executable(RandomWalkRoomGeneratorTests
     tests/RandomWalkRoomGeneratorTests.cpp
     src/RandomWalkRoomGenerator.cpp
+    src/WallThicknessEnforcer.cpp
 )
 
 add_executable(PoissonDiskSamplerTests

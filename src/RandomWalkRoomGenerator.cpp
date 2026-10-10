@@ -1,4 +1,5 @@
 #include "RandomWalkRoomGenerator.h"
+#include "WallThicknessEnforcer.h"
 #include <limits>
 #include <random>
 #include <stdexcept>
@@ -6,8 +7,6 @@
 
 namespace {
     void applyBrush(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, TileMap& map);
-    void enforceMinimumWallHeight(const RandomWalkRoomGeneratorConfig& config, TileMap& map);
-    void enforceMinimumWallWidth(const RandomWalkRoomGeneratorConfig& config, TileMap& map);
     Vector2Int positionPlusDirection(Vector2Int startPosition, int direction);
     bool brushCanBeApplied(Vector2Int pos, const RandomWalkRoomGeneratorConfig& config);
     bool isValidPosition(Vector2Int pos, const RandomWalkRoomGeneratorConfig& config);
@@ -72,13 +71,6 @@ void RandomWalkRoomGenerator::generate(const RandomWalkRoomGeneratorConfig& conf
         throw std::invalid_argument("Starting position is not valid.");
     }
 
-    // Populate the map with walls
-    for (int y = 0; y < config.mapHeight; y++) {
-        for (int x = 0; x < config.mapWidth; x++) {
-            map(x, y) = 1;
-        }
-    }
-
     std::mt19937 rng(seed);
     std::uniform_int_distribution<int> directionDist(0, 3);
 
@@ -95,8 +87,8 @@ void RandomWalkRoomGenerator::generate(const RandomWalkRoomGeneratorConfig& conf
         applyBrush(position, config, map);
     }
 
-    enforceMinimumWallWidth(config, map);
-    enforceMinimumWallHeight(config, map);
+    WallThicknessEnforcer wallThicknessEnforcer;
+    wallThicknessEnforcer.enforceWallThickness(map, config);
 }
 
 
@@ -107,68 +99,8 @@ namespace {
         }
         for (int x = position.x - config.brushSize / 2; x < position.x - config.brushSize / 2 + config.brushSize; x++){
             for (int y = position.y - config.brushSize / 2; y < position.y - config.brushSize / 2 + config.brushSize; y++){
-                map(x, y) = 0;
+                map(x, y) = config.floorValue;
             }
-        }
-    }
-
-    void deleteTile(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, TileMap& map){
-        if (!isValidPosition(position, config)){
-            return;
-        }
-        map(position.x, position.y) = 0;
-
-        int x = position.x;
-        int y1 = position.y;
-
-        //Check if above violates wall height minimum
-        bool deleteTilesAbove = false;
-        for (int y = y1 + 1; y < y1 + config.wallHeightMinimum; y++){
-            if (!isValidPosition(Vector2Int(x, y + 1), config)){
-                break;
-            }
-            if (map(x, y) == 1 && map(x, y + 1) == 0){
-                deleteTilesAbove = true;
-                break;
-            }
-            if (map(x, y) == 0){
-                break;
-            }
-        }
-
-        //Check if below violates wall height minimum
-        bool deleteTilesBelow = false;
-        for (int y = y1 - 1; y > y1 - config.wallHeightMinimum; y--){
-            if (!isValidPosition(Vector2Int(x, y - 1), config)){
-                break;
-            }
-            if (map(x, y) == 1 && map(x, y - 1) == 0){
-                deleteTilesBelow = true;
-                break;
-            }
-            if (map(x, y) == 0){
-                break;
-            }
-        }
-
-        //Delete tiles as necessary
-        for (int y = y1 + 1; y < y1 + config.wallHeightMinimum && deleteTilesAbove; y++){
-            if (!isValidPosition(Vector2Int(x, y), config)){
-                break;
-            }
-            if (map(x, y) == 0){
-                break;
-            }
-            map(x, y) = 0;
-        }
-        for (int y = y1 - 1; y > y1 - config.wallHeightMinimum && deleteTilesBelow; y--){
-            if (!isValidPosition(Vector2Int(x, y), config)){
-                break;
-            }
-            if (map(x, y) == 0){
-                break;
-            }
-            map(x, y) = 0;
         }
     }
 
@@ -181,44 +113,6 @@ namespace {
         }
 
         return startPosition; // Should never reach here
-    }
-
-    void enforceMinimumWallHeight(const RandomWalkRoomGeneratorConfig& config, TileMap& map){
-        for (int x = config.leftPadding; x < config.mapWidth - config.rightPadding; x++){
-            int count = 0;
-            for (int y = config.topPadding; y < config.mapHeight - config.bottomPadding; y++){
-                if (map(x, y) == 1){
-                    count++;
-                }
-                if (map(x, y) == 0){
-                    if (count < config.wallWidthMinimum){
-                        for (int yd = y - count; yd < y; yd++){
-                            map(x, yd) = 0;
-                        }
-                    }
-                    count = 0;
-                }
-            }
-        }
-    }
-
-    void enforceMinimumWallWidth(const RandomWalkRoomGeneratorConfig& config, TileMap& map){
-        for (int y = config.bottomPadding; y < config.mapHeight - config.topPadding; y++){
-            int count = 0;
-            for (int x = config.leftPadding; x < config.mapWidth - config.rightPadding; x++){
-                if (map(x, y) == 1){
-                    count++;
-                }
-                if (map(x, y) == 0){
-                    if (count < config.wallWidthMinimum){
-                        for (int xd = x - count; xd < x; xd++){
-                            map(xd, y) = 0;
-                        }
-                    }
-                    count = 0;
-                }
-            }
-        }
     }
 
     bool brushCanBeApplied(Vector2Int pos, const RandomWalkRoomGeneratorConfig& config){
