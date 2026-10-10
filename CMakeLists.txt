@@ -6,6 +6,8 @@ add_executable(QuickDungeonGeneration
     tests/UserInputSeedTest.cpp
     src/RandomWalkRoomGenerator.cpp
     src/PoissonDiskSampler.cpp
+    src/MSTSolver.cpp
+    src/DisjointSet.cpp
 )
 
 add_executable(RandomWalkRoomGeneratorTests
@@ -16,6 +18,12 @@ add_executable(RandomWalkRoomGeneratorTests
 add_executable(PoissonDiskSamplerTests
     tests/PoissonDiskSamplerTests.cpp
     src/PoissonDiskSampler.cpp
+)
+
+add_executable(MSTSolverTests
+    tests/MSTSolverTests.cpp
+    src/MSTSolver.cpp
+    src/DisjointSet.cpp
 )
 
 target_include_directories(QuickDungeonGeneration
@@ -29,6 +37,11 @@ target_include_directories(RandomWalkRoomGeneratorTests
 )
 
 target_include_directories(PoissonDiskSamplerTests
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+target_include_directories(MSTSolverTests
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
@@ -48,6 +61,12 @@ target_compile_features(PoissonDiskSamplerTests
         cxx_std_20
 )
 
+target_compile_features(MSTSolverTests
+    PRIVATE
+        cxx_std_20
+)
+
 enable_testing()
 add_test(NAME RandomWalkRoomGeneratorTests COMMAND RandomWalkRoomGeneratorTests)
 add_test(NAME PoissonDiskSamplerTests COMMAND PoissonDiskSamplerTests)
+add_test(NAME MSTSolverTests COMMAND MSTSolverTests)
