@@ -85,6 +85,18 @@ std::vector<Vector2> PoissonDiskSampler::generate(float width, float height, flo
     return samples;
 }
 
+std::vector<Vector2Int> PoissonDiskSampler::generateIntegerPoints(float width, float height, float minDistance, int points, int maxAttempts, int seed) {
+    std::vector<Vector2> floatPoints = generate(width, height, minDistance, points, maxAttempts, seed);
+    std::vector<Vector2Int> intPoints;
+    intPoints.reserve(floatPoints.size());
+
+    for (const auto& point : floatPoints) {
+        intPoints.emplace_back(static_cast<int>(point.x), static_cast<int>(point.y));
+    }
+
+    return intPoints;
+}
+
 namespace {
     void addSample(Vector2 sample, std::vector<Vector2>& samples, std::vector<int>& active, Grid& grid, float cell) {
         int i = static_cast<int>(sample.x / cell);

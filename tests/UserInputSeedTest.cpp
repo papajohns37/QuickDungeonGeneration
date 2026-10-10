@@ -45,12 +45,10 @@ int main(){
     TileMap map(MAP_WIDTH, MAP_HEIGHT);
     // gen.generate(config, map, seed);
     PoissonDiskSampler sampler;
-    const auto samples = sampler.generate(MAP_WIDTH, MAP_HEIGHT, POISSON_MIN_DISTANCE, POISSON_POINTS, POISSON_MAX_ATTEMPTS, seed);
+    const auto samples = sampler.generateIntegerPoints(MAP_WIDTH, MAP_HEIGHT, POISSON_MIN_DISTANCE, POISSON_POINTS, POISSON_MAX_ATTEMPTS, seed);
 
     for (const auto& sample : samples) {
-        int x = static_cast<int>(sample.x);
-        int y = static_cast<int>(sample.y);
-        map(x, y) = 1; // Mark the sampled point on the map
+        map(sample.x, sample.y) = 1; // Mark the sampled point on the map
     }
 
     for (int i = 0; i < MAP_HEIGHT; i++){
