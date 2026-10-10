@@ -8,6 +8,7 @@ add_executable(QuickDungeonGeneration
     src/PoissonDiskSampler.cpp
     src/MSTSolver.cpp
     src/DisjointSet.cpp
+    src/OrthogonalRoutingPathfinder.cpp
 )
 
 add_executable(RandomWalkRoomGeneratorTests
@@ -26,6 +27,11 @@ add_executable(MSTSolverTests
     src/DisjointSet.cpp
 )
 
+add_executable(OrthogonalRoutingPathfinderTests
+    tests/OrthogonalRoutingPathfinderTests.cpp
+    src/OrthogonalRoutingPathfinder.cpp
+)
+
 target_include_directories(QuickDungeonGeneration
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
@@ -42,6 +48,11 @@ target_include_directories(PoissonDiskSamplerTests
 )
 
 target_include_directories(MSTSolverTests
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+target_include_directories(OrthogonalRoutingPathfinderTests
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
@@ -66,7 +77,13 @@ target_compile_features(MSTSolverTests
         cxx_std_20
 )
 
+target_compile_features(OrthogonalRoutingPathfinderTests
+    PRIVATE
+        cxx_std_20
+)
+
 enable_testing()
 add_test(NAME RandomWalkRoomGeneratorTests COMMAND RandomWalkRoomGeneratorTests)
 add_test(NAME PoissonDiskSamplerTests COMMAND PoissonDiskSamplerTests)
 add_test(NAME MSTSolverTests COMMAND MSTSolverTests)
+add_test(NAME OrthogonalRoutingPathfinderTests COMMAND OrthogonalRoutingPathfinderTests)
