@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <cstdint>
 
@@ -7,6 +9,7 @@ struct TileMap {
     std::vector<uint8_t> data;
 
     TileMap(int width, int height) : width(width), height(height), data(width * height, 0) {}
+    TileMap(int width, int height, int defaultValue) : width(width), height(height), data(width * height, defaultValue) {}
 
     inline uint8_t& operator()(int x, int y) {
         return data[y * width + x];
