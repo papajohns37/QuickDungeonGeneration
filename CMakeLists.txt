@@ -4,6 +4,7 @@ project(QuickDungeonGeneration LANGUAGES CXX)
 
 add_executable(QuickDungeonGeneration
     tests/UserInputSeedTest.cpp
+    src/AStarPathFinder.cpp
     src/DungeonGenerator.cpp
     src/RandomWalkRoomGenerator.cpp
     src/PoissonDiskSampler.cpp

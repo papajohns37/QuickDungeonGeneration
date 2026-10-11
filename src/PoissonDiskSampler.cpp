@@ -8,8 +8,8 @@
 #include <stdexcept>
 
 namespace {
-    void addSample(Vector2 sample, std::vector<Vector2>& samples, std::vector<int>& active, Grid& grid, float cell);
-    bool isValid(Vector2 v, const Grid& grid, const std::vector<Vector2>& samples, float minDist, float cellSize);
+    void addSample(Vector2 sample, std::vector<Vector2>& samples, std::vector<int>& active, Grid<int>& grid, float cell);
+    bool isValid(Vector2 v, const Grid<int>& grid, const std::vector<Vector2>& samples, float minDist, float cellSize);
 }
 
 std::vector<Vector2> PoissonDiskSampler::generate(float width, float height, float minDistance, int points, int maxAttempts, int seed) {
@@ -46,7 +46,7 @@ std::vector<Vector2> PoissonDiskSampler::generate(float width, float height, flo
     }
     int gridWidth = static_cast<int>(std::ceil(width / cellSize));
     int gridHeight = static_cast<int>(std::ceil(height / cellSize));
-    Grid grid(gridWidth, gridHeight, -1);
+    Grid<int> grid(gridWidth, gridHeight, -1);
     std::vector<Vector2> samples;
     std::vector<int> active;
     addSample(Vector2(width / 2, height / 2), samples, active, grid, cellSize);
@@ -98,7 +98,7 @@ std::vector<Vector2Int> PoissonDiskSampler::generateIntegerPoints(float width, f
 }
 
 namespace {
-    void addSample(Vector2 sample, std::vector<Vector2>& samples, std::vector<int>& active, Grid& grid, float cell) {
+    void addSample(Vector2 sample, std::vector<Vector2>& samples, std::vector<int>& active, Grid<int>& grid, float cell) {
         int i = static_cast<int>(sample.x / cell);
         int j = static_cast<int>(sample.y / cell);
         grid(i, j) = samples.size();
@@ -106,7 +106,7 @@ namespace {
         active.push_back(samples.size() - 1);
     }
 
-    bool isValid(Vector2 v, const Grid& grid, const std::vector<Vector2>& samples, float minDist, float cellSize){
+    bool isValid(Vector2 v, const Grid<int>& grid, const std::vector<Vector2>& samples, float minDist, float cellSize){
         int gi = static_cast<int>(v.x / cellSize);
         int gj = static_cast<int>(v.y / cellSize);
         for (int di = -1; di <= 1; di++){

@@ -23,10 +23,10 @@ namespace {
     }
 
     void testFindPathReturnsStraightRouteWhenNotBlocked() {
-        TileMap map(10, 10, 0);
+        Grid<uint8_t> map(10, 10, 0);
         OrthogonalRoutingPathfinder pathfinder;
 
-        const auto path = pathfinder.FindPath(map, {1, 1}, {5, 4}, 1, {});
+        const auto path = pathfinder.FindPath(map, {1, 1}, {5, 4}, 1, 1, {});
 
         require(!path.empty(), "A valid route should not be empty.");
         require(path.front().x == 1 && path.front().y == 1,
@@ -38,10 +38,10 @@ namespace {
     }
 
     void testFindPathIncludesCornerTilesForThickerRoutes() {
-        TileMap map(10, 10, 0);
+        Grid<uint8_t> map(10, 10, 0);
         OrthogonalRoutingPathfinder pathfinder;
 
-        const auto path = pathfinder.FindPath(map, {1, 8}, {5, 3}, 3, {});
+        const auto path = pathfinder.FindPath(map, {1, 8}, {5, 3}, 3, 3, {});
 
         require(containsPoint(path, {1, 3}), "The route should include the turn corner tile chosen by the route branch.");
         require(containsPoint(path, {5, 3}), "The route should include the destination corner tile.");
@@ -52,10 +52,10 @@ namespace {
     }
 
     void testFindPathUsesWidthPerpendicularToEachSegment() {
-        TileMap map(12, 12, 0);
+        Grid<uint8_t> map(12, 12, 0);
         OrthogonalRoutingPathfinder pathfinder;
 
-        const auto path = pathfinder.FindPath(map, {2, 2}, {8, 8}, 3, {});
+        const auto path = pathfinder.FindPath(map, {2, 2}, {8, 8}, 3, 3, {});
 
         require(containsPoint(path, {4, 1}) && containsPoint(path, {4, 2}) &&
                     containsPoint(path, {4, 3}),
@@ -66,24 +66,24 @@ namespace {
     }
 
     void testFindPathRejectsOutOfBoundsCoordinates() {
-        TileMap map(5, 5, 0);
+        Grid<uint8_t> map(5, 5, 0);
         OrthogonalRoutingPathfinder pathfinder;
 
         try {
-            pathfinder.FindPath(map, {-1, 0}, {2, 2}, 1, {});
+            pathfinder.FindPath(map, {-1, 0}, {2, 2}, 1, 1, {});
             throw std::runtime_error("Out-of-bounds coordinates should throw.");
         } catch (const std::invalid_argument&) {
         }
 
         try {
-            pathfinder.FindPath(map, {0, 0}, {5, 2}, 1, {});
+            pathfinder.FindPath(map, {0, 0}, {5, 2}, 1, 1, {});
             throw std::runtime_error("Out-of-bounds coordinates should throw.");
         } catch (const std::invalid_argument&) {
         }
     }
 
     void testFindPathAvoidsBlockedTilesByChoosingAnAlternativeRoute() {
-        TileMap map(10, 10, 0);
+        Grid<uint8_t> map(10, 10, 0);
         map(2, 1) = 1;
         map(3, 1) = 1;
         map(4, 1) = 1;
@@ -91,7 +91,7 @@ namespace {
         OrthogonalRoutingPathfinder pathfinder;
         std::unordered_set<int> blockedTiles = {1};
 
-        const auto path = pathfinder.FindPath(map, {1, 1}, {5, 3}, 1, blockedTiles);
+        const auto path = pathfinder.FindPath(map, {1, 1}, {5, 3}, 1, 1, blockedTiles);
 
         require(!path.empty(), "The alternative path should be selected when a direct route is blocked.");
         require(path.front().x == 1 && path.front().y == 1,

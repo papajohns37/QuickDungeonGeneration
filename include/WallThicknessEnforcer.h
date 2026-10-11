@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Grid.h"
 #include "RandomWalkRoomGeneratorConfig.h"
-#include "TileMap.h"
 
 class WallThicknessEnforcer {
     public:
-        void enforceWallThickness(TileMap& map, const RandomWalkRoomGeneratorConfig& config);
+        void enforceWallThickness(Grid<uint8_t>& map, const RandomWalkRoomGeneratorConfig& config);
 };

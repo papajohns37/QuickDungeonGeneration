@@ -1,11 +1,11 @@
 #pragma once
 
 #include "DungeonGeneratorConfig.h"
-#include "TileMap.h"
+#include "Grid.h"
 
 struct DungeonGenerationResult {
-    TileMap map;
-    int corridorsNotFound;
+    Grid<uint8_t> map;
+    int astarCalls;
 };
 
 class DungeonGenerator {

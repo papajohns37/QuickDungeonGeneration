@@ -1,5 +1,6 @@
 #include "DungeonGenerator.h"
 
+#include "AStarPathfinder.h"
 #include "MSTSolver.h"
 #include "OrthogonalRoutingPathfinder.h"
 #include "PoissonDiskSampler.h"
@@ -13,11 +14,11 @@
 
 namespace {
     void copyRoomToMap(
-        const TileMap& room,
+        const Grid<uint8_t>& room,
         int roomValue,
         Vector2Int center,
         const DungeonGeneratorConfig& config,
-        TileMap& map) {
+        Grid<uint8_t>& map) {
         const int left = center.x - config.roomWidth / 2;
         const int top = center.y - config.roomHeight / 2;
         for (int y = 0; y < config.roomHeight; ++y) {
@@ -48,7 +49,7 @@ namespace {
 DungeonGenerationResult DungeonGenerator::generate(
     const DungeonGeneratorConfig& config,
     int seed) const {
-    TileMap map(config.mapWidth, config.mapHeight, config.mapWallValue);
+    Grid<uint8_t> map(config.mapWidth, config.mapHeight, config.mapWallValue);
     PoissonDiskSampler sampler;
     const auto localSamples = sampler.generateIntegerPoints(
         config.mapWidth - config.roomWidth,
@@ -70,7 +71,7 @@ DungeonGenerationResult DungeonGenerator::generate(
     RandomWalkRoomGenerator roomGenerator;
     for (int roomIndex = 0; roomIndex < static_cast<int>(rooms.size()); ++roomIndex) {
         const int roomValue = config.roomTileBase + roomIndex;
-        TileMap room(config.roomWidth, config.roomHeight, config.mapWallValue);
+        Grid<uint8_t> room(config.roomWidth, config.roomHeight, config.mapWallValue);
         const RandomWalkRoomGeneratorConfig roomConfig{
             config.roomWidth,
             config.roomHeight,
@@ -99,14 +100,16 @@ DungeonGenerationResult DungeonGenerator::generate(
         config.mstExtraEdges);
 
     OrthogonalRoutingPathfinder pathfinder;
-    int corridorsNotFound = 0;
+    AStarPathfinder aStarPathfinder;
+    int astarCalls = 0;
     for (const auto& edge : edges) {
         const int sourceRoom = config.roomTileBase + edge.v1;
         const int destinationRoom = config.roomTileBase + edge.v2;
-        const auto path = pathfinder.FindPath(
+        auto path = pathfinder.FindPath(
             map,
             rooms[edge.v1],
             rooms[edge.v2],
+            config.corridorWidth + 2 * config.wallHeightMinimum > config.wallWidthMinimum ? config.wallHeightMinimum : config.wallWidthMinimum,
             config.corridorWidth,
             corridorBlockedTiles(
                 static_cast<int>(rooms.size()),
@@ -114,9 +117,20 @@ DungeonGenerationResult DungeonGenerator::generate(
                 sourceRoom,
                 destinationRoom));
 
-        if (path.empty()) {
-            ++corridorsNotFound;
-            continue;
+        // If this edge is part of the MST and could not be found, use A* to ensure the dungeon is fully accessible
+        if (path.empty() && edges.size() < rooms.size()) {
+            astarCalls++;
+            // path = aStarPathfinder.FindPath(
+            //     map,
+            //     rooms[edge.v1],
+            //     rooms[edge.v2],
+            //     config.corridorWidth + 2 * config.wallHeightMinimum > config.wallWidthMinimum ? config.wallHeightMinimum : config.wallWidthMinimum,
+            //     config.corridorWidth,
+            //     corridorBlockedTiles(
+            //         static_cast<int>(rooms.size()),
+            //         config.roomTileBase,
+            //         sourceRoom,
+            //         destinationRoom));
         }
 
         for (const auto& point : path) {
@@ -153,5 +167,5 @@ DungeonGenerationResult DungeonGenerator::generate(
     WallThicknessEnforcer wallThicknessEnforcer;
     wallThicknessEnforcer.enforceWallThickness(map, fullMapConfig);
 
-    return {std::move(map), corridorsNotFound};
+    return {std::move(map), astarCalls};
 }

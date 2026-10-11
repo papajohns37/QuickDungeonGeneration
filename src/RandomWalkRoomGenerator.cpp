@@ -6,13 +6,13 @@
 #include <string>
 
 namespace {
-    void applyBrush(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, TileMap& map);
+    void applyBrush(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, Grid<uint8_t>& map);
     Vector2Int positionPlusDirection(Vector2Int startPosition, int direction);
     bool brushCanBeApplied(Vector2Int pos, const RandomWalkRoomGeneratorConfig& config);
     bool isValidPosition(Vector2Int pos, const RandomWalkRoomGeneratorConfig& config);
 }
 
-void RandomWalkRoomGenerator::generate(const RandomWalkRoomGeneratorConfig& config, TileMap& map, int seed) {
+void RandomWalkRoomGenerator::generate(const RandomWalkRoomGeneratorConfig& config, Grid<uint8_t>& map, int seed) {
     //Validate input parameters
     if (config.mapWidth <= 0){
         throw std::invalid_argument("Map width must be positive.");
@@ -93,7 +93,7 @@ void RandomWalkRoomGenerator::generate(const RandomWalkRoomGeneratorConfig& conf
 
 
 namespace {
-    void applyBrush(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, TileMap& map){
+    void applyBrush(Vector2Int position, const RandomWalkRoomGeneratorConfig& config, Grid<uint8_t>& map){
         if (!brushCanBeApplied(position, config)){
             return;
         }

@@ -1,6 +1,6 @@
 #include "WallThicknessEnforcer.h"
 
-void WallThicknessEnforcer::enforceWallThickness(TileMap& map, const RandomWalkRoomGeneratorConfig& config){
+void WallThicknessEnforcer::enforceWallThickness(Grid<uint8_t>& map, const RandomWalkRoomGeneratorConfig& config){
     //Enforce wall width
     for (int y = config.topPadding; y < config.mapHeight - config.bottomPadding; y++){
         int count = 0;

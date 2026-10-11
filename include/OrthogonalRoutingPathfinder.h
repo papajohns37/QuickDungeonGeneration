@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TileMap.h"
+#include "Grid.h"
 #include "Vector2Int.h"
 #include <unordered_set>
 #include <vector>
@@ -14,5 +14,5 @@ class OrthogonalRoutingPathfinder {
         /// @param width Width of the path
         /// @param validPathTiles Valid tiles the path occupy
         /// @return All tiles in the path, empty set if no such path exists
-        std::vector<Vector2Int> FindPath(const TileMap& map, Vector2Int start, Vector2Int end, int width, std::unordered_set<int> validPathTiles);
+        std::vector<Vector2Int> FindPath(const Grid<uint8_t>& map, Vector2Int start, Vector2Int end, int checkWidth, int drawWidth, std::unordered_set<int> validPathTiles);
 };

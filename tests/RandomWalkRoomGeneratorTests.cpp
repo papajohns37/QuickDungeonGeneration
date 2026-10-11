@@ -1,4 +1,5 @@
 #include "RandomWalkRoomGenerator.h"
+#include "Grid.h"
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -13,7 +14,7 @@ namespace {
             : map_(width, height, 1) {
         }
 
-        TileMap& data() {
+        Grid<uint8_t>& data() {
             return map_;
         }
 
@@ -34,7 +35,7 @@ namespace {
         }
 
     private:
-        TileMap map_;
+        Grid<uint8_t> map_;
     };
 
     RandomWalkRoomGeneratorConfig defaultConfig() {
@@ -60,7 +61,7 @@ namespace {
         }
     }
 
-    void requireInvalid(RandomWalkRoomGeneratorConfig config, TileMap& map, const std::string& message) {
+    void requireInvalid(RandomWalkRoomGeneratorConfig config, Grid<uint8_t>& map, const std::string& message) {
         RandomWalkRoomGenerator generator;
         try {
             generator.generate(config, map, 1);
@@ -299,7 +300,7 @@ namespace {
         requireInvalid(invalid, map.data(), "An effective height smaller than the brush was accepted.");
 
         invalid = config;
-        TileMap mismatchedMap(config.mapWidth - 1, config.mapHeight);
+        Grid<uint8_t> mismatchedMap(config.mapWidth - 1, config.mapHeight);
         requireInvalid(invalid, mismatchedMap, "A map with mismatched dimensions was accepted.");
     }
 

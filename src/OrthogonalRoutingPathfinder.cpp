@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 namespace{
-    bool isBlockedCell(const TileMap& map, int x, int y, int width, const std::unordered_set<int>& validPathTiles){
+    bool isBlockedCell(const Grid<uint8_t>& map, int x, int y, int width, const std::unordered_set<int>& validPathTiles){
         for (int dx = -(width / 2); dx < (width + 1) / 2; ++dx) {
             for (int dy = -(width / 2); dy < (width + 1) / 2; ++dy) {
                 const int cellX = x + dx;
@@ -19,11 +19,11 @@ namespace{
         return false;
     }
 
-    bool isValidPath(const TileMap& map, std::vector<Vector2Int> points, int width, std::unordered_set<int> validPathTiles);
+    bool isValidPath(const Grid<uint8_t>& map, std::vector<Vector2Int> points, int width, std::unordered_set<int> validPathTiles);
     std::vector<Vector2Int> getPath(std::vector<Vector2Int> points, int width);
 }
 
-std::vector<Vector2Int> OrthogonalRoutingPathfinder::FindPath(const TileMap& map, Vector2Int start, Vector2Int end, int width, std::unordered_set<int> validPathTiles){
+std::vector<Vector2Int> OrthogonalRoutingPathfinder::FindPath(const Grid<uint8_t>& map, Vector2Int start, Vector2Int end, int checkWidth, int drawWidth, std::unordered_set<int> validPathTiles){
     if (start.x < 0 || start.y < 0 || end.x < 0 || end.y < 0 ||
         start.x >= map.width || start.y >= map.height || end.x >= map.width || end.y >= map.height){
         throw std::invalid_argument("Coordinates must be on the map.");
@@ -33,26 +33,26 @@ std::vector<Vector2Int> OrthogonalRoutingPathfinder::FindPath(const TileMap& map
     Vector2Int v2{end.x, start.y};
     std::vector<Vector2Int> p1 = {start, v1, end};
     std::vector<Vector2Int> p2 = {start, v2, end};
-    bool p1Valid = isValidPath(map, p1, width, validPathTiles);
-    bool p2Valid = isValidPath(map, p2, width, validPathTiles);
+    bool p1Valid = isValidPath(map, p1, checkWidth, validPathTiles);
+    bool p2Valid = isValidPath(map, p2, checkWidth, validPathTiles);
     if (p1Valid && p2Valid){
         //Tiebreaker for now
         if (start.y >= map.height / 2){
-            return getPath(p1, width);
+            return getPath(p1, drawWidth);
         }
-        return getPath(p2, width);
+        return getPath(p2, drawWidth);
     }
     if (p1Valid){
-        return getPath(p1, width);
+        return getPath(p1, drawWidth);
     }
     if (p2Valid){
-        return getPath(p2, width);
+        return getPath(p2, drawWidth);
     }
     return std::vector<Vector2Int>{};
 }
 
 namespace{
-    bool isValidPath(const TileMap& map, std::vector<Vector2Int> points, int width, std::unordered_set<int> validPathTiles){
+    bool isValidPath(const Grid<uint8_t>& map, std::vector<Vector2Int> points, int width, std::unordered_set<int> validPathTiles){
         for (size_t i = 0; i < points.size() - 1; i++)
         {
             Vector2Int v1x = points[i].x < points[i + 1].x ? points[i] : points[i + 1];
