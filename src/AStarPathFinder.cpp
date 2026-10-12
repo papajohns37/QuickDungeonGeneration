@@ -26,6 +26,8 @@ std::vector<Vector2Int> AStarPathfinder::FindPath(const Grid<uint8_t>& map, Vect
             };
         }
     }
+    astarMap(start.x, start.y).distanceFromStart = 0.0f;
+    astarMap(start.x, start.y).totalHeuristicCost = distance(start, end);
 
     std::priority_queue<AStarTile, std::vector<AStarTile>, std::greater<AStarTile>> queue;
     queue.push(astarMap(start.x, start.y));

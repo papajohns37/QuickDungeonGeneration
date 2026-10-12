@@ -35,16 +35,8 @@ int main() {
         30      // poissonMaximumAttempts
     };
 
-    DungeonGenerationResult result = DungeonGenerator{}.generate(config, seed);
-    for (size_t i = 0; i < 10000; i++)
-    {
-        const DungeonGenerationResult r = DungeonGenerator{}.generate(config, i + seed);
-        if (r.astarCalls > result.astarCalls){
-            result = r;
-        }
-    }
+    const DungeonGenerationResult result = DungeonGenerator{}.generate(config, seed);
     
-    std::cout << "Max astar calls: " << result.astarCalls << "\n";
     for (int y = 0; y < config.mapHeight; ++y) {
         for (int x = 0; x < config.mapWidth; ++x) {
             std::cout << (result.map(x, y) == config.mapWallValue ? "██" : "  ");

@@ -120,17 +120,22 @@ DungeonGenerationResult DungeonGenerator::generate(
         // If this edge is part of the MST and could not be found, use A* to ensure the dungeon is fully accessible
         if (path.empty() && edges.size() < rooms.size()) {
             astarCalls++;
-            // path = aStarPathfinder.FindPath(
-            //     map,
-            //     rooms[edge.v1],
-            //     rooms[edge.v2],
-            //     config.corridorWidth + 2 * config.wallHeightMinimum > config.wallWidthMinimum ? config.wallHeightMinimum : config.wallWidthMinimum,
-            //     config.corridorWidth,
-            //     corridorBlockedTiles(
-            //         static_cast<int>(rooms.size()),
-            //         config.roomTileBase,
-            //         sourceRoom,
-            //         destinationRoom));
+            path = aStarPathfinder.FindPath(
+                map,
+                rooms[edge.v1],
+                rooms[edge.v2],
+                config.corridorWidth + 2 * config.wallHeightMinimum > config.wallWidthMinimum ? config.wallHeightMinimum : config.wallWidthMinimum,
+                config.corridorWidth,
+                corridorBlockedTiles(
+                    static_cast<int>(rooms.size()),
+                    config.roomTileBase,
+                    sourceRoom,
+                    destinationRoom));
+
+            if (path.empty()){
+                //Final resort, we need to generate a different dungeon to ensure no disconnected dungeons will be built
+                return generate(config, seed - 1);
+            }
         }
 
         for (const auto& point : path) {
